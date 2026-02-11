@@ -4,6 +4,25 @@ A full-stack ERP system built for **Esemby Concept / Pita Bakery** in Singapore.
 
 Built with Next.js 16, TypeScript, Prisma, and Tailwind CSS.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Login](public/screenshots/01-login.png) | ![Dashboard](public/screenshots/02-dashboard.png) |
+| **Login** | **Executive Dashboard** |
+| ![Orders](public/screenshots/03-orders.png) | ![Products](public/screenshots/04-products.png) |
+| **Orders** | **Products** |
+| ![Inventory](public/screenshots/05-inventory.png) | ![Work Orders](public/screenshots/06-work-orders.png) |
+| **Inventory** | **Work Orders** |
+| ![BOM](public/screenshots/07-bom.png) | ![Procurement](public/screenshots/08-procurement.png) |
+| **Bill of Materials** | **Procurement** |
+| ![Customers](public/screenshots/09-customers.png) | ![Profitability](public/screenshots/10-profitability.png) |
+| **Customers** | **Profitability Reports** |
+| ![Waste Analysis](public/screenshots/11-waste-analysis.png) | ![Users](public/screenshots/12-users.png) |
+| **Waste Analysis** | **User Management** |
+| ![Hebrew RTL](public/screenshots/13-hebrew-rtl.png) | ![Mobile](public/screenshots/14-mobile.png) |
+| **Hebrew (RTL)** | **Mobile View** |
+
 ## Features
 
 ### Orders & Customers
