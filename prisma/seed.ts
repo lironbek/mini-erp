@@ -1,4 +1,4 @@
-import { PrismaClient, ProductionLine, UnitOfMeasure, UserRole } from "@prisma/client";
+import { Prisma, PrismaClient, ProductionLine, UnitOfMeasure, UserRole } from "@prisma/client";
 import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -44,6 +44,19 @@ async function main() {
       name: "Ahmad Floor",
       role: UserRole.PRODUCTION,
       preferredLanguage: "ms",
+    },
+  });
+
+  const lironHash = await hash("123456", 12);
+  const liron = await prisma.user.upsert({
+    where: { email: "lironbek88@gmail.com" },
+    update: { passwordHash: lironHash, role: UserRole.ADMIN },
+    create: {
+      email: "lironbek88@gmail.com",
+      passwordHash: lironHash,
+      name: "Liron",
+      role: UserRole.ADMIN,
+      preferredLanguage: "he",
     },
   });
 
@@ -858,7 +871,7 @@ async function main() {
       update: {},
       create: {
         key: setting.key,
-        value: setting.value as any,
+        value: setting.value as Prisma.InputJsonValue,
         description: setting.description,
       },
     });
@@ -901,6 +914,7 @@ async function main() {
   console.log("\n🎉 Seeding complete!");
   console.log("  Users: admin@pitabakery.sg / manager@pitabakery.sg / floor@pitabakery.sg");
   console.log("  Password: password123");
+  console.log("  User: lironbek88@gmail.com / Password: 123456 (ADMIN)");
 }
 
 main()

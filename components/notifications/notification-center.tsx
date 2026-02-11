@@ -31,6 +31,7 @@ export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [now, setNow] = useState(Date.now);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -46,9 +47,13 @@ export function NotificationCenter() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async fetch, setState is not synchronous
     fetchNotifications();
-    // Poll every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
+    // Poll every 30 seconds, also refresh relative timestamps
+    const interval = setInterval(() => {
+      fetchNotifications();
+      setNow(Date.now());
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
@@ -75,7 +80,7 @@ export function NotificationCenter() {
   }
 
   function getTimeAgo(dateStr: string) {
-    const diff = Date.now() - new Date(dateStr).getTime();
+    const diff = now - new Date(dateStr).getTime();
     const minutes = Math.floor(diff / 60000);
     if (minutes < 1) return "now";
     if (minutes < 60) return `${minutes}m`;

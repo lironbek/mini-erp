@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -132,15 +132,15 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [charts, setCharts] = useState<Charts | null>(null);
   const [alerts, setAlerts] = useState<Alerts | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+  const isMobile = useSyncExternalStore(
+    (callback) => {
+      const mq = window.matchMedia("(max-width: 639px)");
+      mq.addEventListener("change", callback);
+      return () => mq.removeEventListener("change", callback);
+    },
+    () => window.matchMedia("(max-width: 639px)").matches,
+    () => false,
+  );
 
   const fetchData = useCallback(async () => {
     try {
@@ -163,6 +163,7 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async fetch, setState is not synchronous
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);

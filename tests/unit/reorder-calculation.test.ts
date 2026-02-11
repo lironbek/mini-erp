@@ -44,12 +44,13 @@ function calculateReorderSuggestions(
         reorderPoint,
         suggestedQuantity,
         daysUntilStockout,
-        urgency:
+        urgency: (
           m.currentStock <= m.minStockLevel
             ? "critical"
             : daysUntilStockout <= m.leadTimeDays
               ? "warning"
-              : "normal",
+              : "normal"
+        ) as ReorderSuggestion["urgency"],
       };
     })
     .sort((a, b) => a.daysUntilStockout - b.daysUntilStockout);
