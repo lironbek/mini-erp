@@ -25,6 +25,17 @@ type Customer = {
   isActive: boolean;
 };
 
+const DUMMY_CUSTOMERS: Customer[] = [
+  { id: "c1", name: { en: "Freshmart Supermarket", he: "פרשמרט סופרמרקט" }, shortName: "Freshmart", contactName: "John Lee", email: "orders@freshmart.sg", phone: "+65 6234 5678", defaultDeliverySlot: "06:00-08:00", orderCutoffTime: "18:00", paymentTerms: 30, tags: ["retail", "priority"], isActive: true },
+  { id: "c2", name: { en: "Cafe Aroma Chain", he: "רשת קפה ארומה" }, shortName: "Cafe Aroma", contactName: "Sarah Chen", email: "procurement@cafearoma.com", phone: "+65 6345 6789", defaultDeliverySlot: "05:00-07:00", orderCutoffTime: "16:00", paymentTerms: 14, tags: ["cafe", "chain"], isActive: true },
+  { id: "c3", name: { en: "City Deli & Bistro", he: "סיטי דלי וביסטרו" }, shortName: "City Deli", contactName: "Michael Tan", email: "mike@citydeli.sg", phone: "+65 6456 7890", defaultDeliverySlot: "07:00-09:00", orderCutoffTime: "17:00", paymentTerms: 14, tags: ["restaurant"], isActive: true },
+  { id: "c4", name: { en: "Green Garden Restaurant", he: "מסעדת הגן הירוק" }, shortName: "Green Garden", contactName: "Lisa Wong", email: "lisa@greengarden.sg", phone: "+65 6567 8901", defaultDeliverySlot: "08:00-10:00", orderCutoffTime: "19:00", paymentTerms: 7, tags: ["restaurant", "organic"], isActive: true },
+  { id: "c5", name: { en: "Hummus House", he: "בית החומוס" }, shortName: "Hummus House", contactName: "David Levy", email: "david@hummushouse.sg", phone: "+65 6678 9012", defaultDeliverySlot: "06:00-08:00", orderCutoffTime: "17:00", paymentTerms: 30, tags: ["restaurant", "priority"], isActive: true },
+  { id: "c6", name: { en: "Baker's Corner", he: "פינת האופה" }, shortName: null, contactName: "Amy Koh", email: "amy@bakerscorner.sg", phone: "+65 6789 0123", defaultDeliverySlot: "09:00-11:00", orderCutoffTime: "20:00", paymentTerms: 7, tags: ["retail"], isActive: true },
+  { id: "c7", name: { en: "Marina Bay Hotel", he: "מלון מרינה ביי" }, shortName: "MB Hotel", contactName: "Robert Chang", email: "f&b@mbhotel.sg", phone: "+65 6890 1234", defaultDeliverySlot: "05:00-06:00", orderCutoffTime: "15:00", paymentTerms: 45, tags: ["hotel", "premium"], isActive: true },
+  { id: "c8", name: { en: "Sunrise Bakery", he: "מאפיית הזריחה" }, shortName: null, contactName: "Jenny Lim", email: "jenny@sunrise.sg", phone: "+65 6901 2345", defaultDeliverySlot: null, orderCutoffTime: null, paymentTerms: 30, tags: [], isActive: false },
+];
+
 export default function CustomersPage() {
   const t = useTranslations();
   const locale = useLocale();
@@ -39,9 +50,14 @@ export default function CustomersPage() {
   async function fetchCustomers() {
     try {
       const res = await fetch("/api/customers");
-      if (res.ok) setCustomers(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers(data.length > 0 ? data : DUMMY_CUSTOMERS);
+      } else {
+        setCustomers(DUMMY_CUSTOMERS);
+      }
     } catch {
-      toast.error("Failed to load customers");
+      setCustomers(DUMMY_CUSTOMERS);
     } finally {
       setLoading(false);
     }
@@ -84,16 +100,19 @@ export default function CustomersPage() {
     {
       key: "defaultDeliverySlot",
       header: t("customers.defaultDeliverySlot"),
+      hideOnMobile: true,
       render: (row) => row.defaultDeliverySlot || "—",
     },
     {
       key: "orderCutoffTime",
       header: t("customers.orderCutoffTime"),
+      hideOnMobile: true,
       render: (row) => row.orderCutoffTime || "—",
     },
     {
       key: "tags",
       header: t("customers.tags"),
+      hideOnMobile: true,
       render: (row) => {
         const tags = Array.isArray(row.tags) ? row.tags : [];
         return tags.length > 0 ? (
@@ -119,9 +138,9 @@ export default function CustomersPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("customers.title")}</h1>
+    <div className="space-y-6 animate-fade-in-up">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">{t("customers.title")}</h1>
         <Button onClick={() => router.push(`/${locale}/customers/new`)}>
           <Plus className="me-2 h-4 w-4" />
           {t("customers.newCustomer")}

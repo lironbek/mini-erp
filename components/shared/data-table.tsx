@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -25,6 +26,7 @@ export type Column<T> = {
   key: string;
   header: string;
   sortable?: boolean;
+  hideOnMobile?: boolean;
   render?: (row: T) => React.ReactNode;
   accessor?: (row: T) => string | number | boolean | null | undefined;
 };
@@ -118,9 +120,9 @@ export function DataTable<T extends { id?: string }>({
     <div className="space-y-4">
       {/* Search + Filters row */}
       {(searchFn || filters.length > 0) && (
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
           {searchFn && (
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={search}
@@ -142,7 +144,7 @@ export function DataTable<T extends { id?: string }>({
                 setPage(0);
               }}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder={filter.label} />
               </SelectTrigger>
               <SelectContent>
@@ -158,8 +160,8 @@ export function DataTable<T extends { id?: string }>({
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-md border">
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -222,9 +224,43 @@ export function DataTable<T extends { id?: string }>({
         </Table>
       </div>
 
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {paged.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">{t("noResults")}</p>
+        ) : (
+          paged.map((row, idx) => (
+            <Card
+              key={row.id || idx}
+              className={onRowClick ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}
+              onClick={() => onRowClick?.(row)}
+            >
+              <CardContent className="p-4 space-y-2">
+                {columns
+                  .filter((col) => !col.hideOnMobile)
+                  .map((col) => (
+                    <div key={col.key} className="flex items-start justify-between gap-2">
+                      <span className="text-xs text-muted-foreground shrink-0">{col.header}</span>
+                      <span className="text-sm text-end">
+                        {col.render
+                          ? col.render(row)
+                          : String(
+                              col.accessor
+                                ? col.accessor(row) ?? ""
+                                : (row as Record<string, unknown>)[col.key] ?? ""
+                            )}
+                      </span>
+                    </div>
+                  ))}
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="text-sm text-muted-foreground">
             {filtered.length} {t("total")}
           </span>

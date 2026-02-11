@@ -112,14 +112,14 @@ export default function ProductionPlanPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("production.planTitle")}</h1>
         <div className="flex items-center gap-3">
           <Input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-44"
+            className="w-full sm:w-44"
           />
           <Button onClick={fetchPlan} disabled={loading}>
             {loading ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <Calendar className="me-2 h-4 w-4" />}
@@ -166,6 +166,7 @@ export default function ProductionPlanPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
+                      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -199,6 +200,7 @@ export default function ProductionPlanPage() {
                           ))}
                         </TableBody>
                       </Table>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -212,6 +214,7 @@ export default function ProductionPlanPage() {
                 <CardTitle>{t("production.materialRequirements")}</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -245,6 +248,7 @@ export default function ProductionPlanPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           )}

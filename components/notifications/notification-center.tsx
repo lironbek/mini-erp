@@ -101,7 +101,7 @@ export function NotificationCenter() {
           <span className="sr-only">{t("notifications.title")}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 p-0" align="end">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h4 className="font-semibold text-sm">{t("notifications.title")}</h4>
           <div className="flex items-center gap-1">

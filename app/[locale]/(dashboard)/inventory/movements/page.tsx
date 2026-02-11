@@ -98,14 +98,14 @@ export default function MovementsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
         <Select
           value={filters.movementType || "__all__"}
           onValueChange={(v) =>
             setFilters({ ...filters, movementType: v === "__all__" ? "" : v })
           }
         >
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder={t("inventory.movementType")} />
           </SelectTrigger>
           <SelectContent>
@@ -122,14 +122,14 @@ export default function MovementsPage() {
           type="date"
           value={filters.dateFrom}
           onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-          className="w-40"
+          className="w-full sm:w-40"
           placeholder="From"
         />
         <Input
           type="date"
           value={filters.dateTo}
           onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-          className="w-40"
+          className="w-full sm:w-40"
           placeholder="To"
         />
 
@@ -155,7 +155,7 @@ export default function MovementsPage() {
               {movements.map((m) => (
                 <div
                   key={m.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border rounded-lg"
                 >
                   <div className="flex items-center gap-3">
                     <span

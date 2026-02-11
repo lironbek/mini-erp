@@ -339,7 +339,7 @@ export default function OrderFormPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.push(`/${locale}/orders`)}>
             <ArrowLeft className="h-5 w-5" />
@@ -381,23 +381,23 @@ export default function OrderFormPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {!isNew && (
             <>
               <Button variant="outline" size="sm" onClick={handleDuplicate}>
-                <Copy className="me-1 h-4 w-4" />
-                {t("orders.duplicateOrder")}
+                <Copy className="h-4 w-4 sm:me-1" />
+                <span className="hidden sm:inline">{t("orders.duplicateOrder")}</span>
               </Button>
               <Button variant="outline" size="sm" onClick={handleLockToggle}>
                 {isLocked ? (
                   <>
-                    <Unlock className="me-1 h-4 w-4" />
-                    {t("orders.unlockOrder")}
+                    <Unlock className="h-4 w-4 sm:me-1" />
+                    <span className="hidden sm:inline">{t("orders.unlockOrder")}</span>
                   </>
                 ) : (
                   <>
-                    <Lock className="me-1 h-4 w-4" />
-                    {t("orders.lockOrder")}
+                    <Lock className="h-4 w-4 sm:me-1" />
+                    <span className="hidden sm:inline">{t("orders.lockOrder")}</span>
                   </>
                 )}
               </Button>
@@ -571,70 +571,141 @@ export default function OrderFormPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[300px]">{t("orders.product")}</TableHead>
-                    <TableHead>{t("orders.quantity")}</TableHead>
-                    <TableHead>{t("orders.unitPrice")}</TableHead>
-                    <TableHead>{t("orders.totalPrice")}</TableHead>
-                    <TableHead>{t("common.notes")}</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {form.items.map((item, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>
-                        <Select
-                          value={item.productId}
-                          onValueChange={(v) => updateItem(idx, "productId", v)}
-                          disabled={isLocked}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("orders.product")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>
-                                {p.sku} - {getLocalizedName(p.name, locale)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))}
-                          className="w-24"
-                          min={1}
-                          disabled={isLocked}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={item.unitPrice}
-                          onChange={(e) => updateItem(idx, "unitPrice", Number(e.target.value))}
-                          className="w-28"
-                          step="0.01"
-                          disabled={isLocked}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        ${item.totalPrice.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={item.notes}
-                          onChange={(e) => updateItem(idx, "notes", e.target.value)}
-                          placeholder={t("common.notes")}
-                          disabled={isLocked}
-                        />
-                      </TableCell>
-                      <TableCell>
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[200px]">{t("orders.product")}</TableHead>
+                      <TableHead>{t("orders.quantity")}</TableHead>
+                      <TableHead>{t("orders.unitPrice")}</TableHead>
+                      <TableHead>{t("orders.totalPrice")}</TableHead>
+                      <TableHead>{t("common.notes")}</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {form.items.map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>
+                          <Select
+                            value={item.productId}
+                            onValueChange={(v) => updateItem(idx, "productId", v)}
+                            disabled={isLocked}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("orders.product")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {products.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.sku} - {getLocalizedName(p.name, locale)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))}
+                            className="w-20 lg:w-24"
+                            min={1}
+                            disabled={isLocked}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={item.unitPrice}
+                            onChange={(e) => updateItem(idx, "unitPrice", Number(e.target.value))}
+                            className="w-24 lg:w-28"
+                            step="0.01"
+                            disabled={isLocked}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          ${item.totalPrice.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={item.notes}
+                            onChange={(e) => updateItem(idx, "notes", e.target.value)}
+                            placeholder={t("common.notes")}
+                            disabled={isLocked}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeItem(idx)}
+                            disabled={isLocked}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {form.items.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          {t("common.noResults")}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {form.items.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">{t("common.noResults")}</p>
+                ) : (
+                  form.items.map((item, idx) => (
+                    <div key={idx} className="border rounded-lg p-3 space-y-3">
+                      <Select
+                        value={item.productId}
+                        onValueChange={(v) => updateItem(idx, "productId", v)}
+                        disabled={isLocked}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("orders.product")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.sku} - {getLocalizedName(p.name, locale)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-muted-foreground">{t("orders.quantity")}</label>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))}
+                            min={1}
+                            disabled={isLocked}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">{t("orders.unitPrice")}</label>
+                          <Input
+                            type="number"
+                            value={item.unitPrice}
+                            onChange={(e) => updateItem(idx, "unitPrice", Number(e.target.value))}
+                            step="0.01"
+                            disabled={isLocked}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">${item.totalPrice.toFixed(2)}</span>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -643,18 +714,12 @@ export default function OrderFormPage() {
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {form.items.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        {t("common.noResults")}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
               <div className="flex justify-end mt-4 pe-4">
                 <div className="text-end">
                   <p className="text-sm text-muted-foreground">{t("orders.subtotal")}</p>

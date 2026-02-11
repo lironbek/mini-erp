@@ -129,7 +129,7 @@ export default function ProcurementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("procurement.purchaseOrders")}</h1>
         <Button onClick={() => router.push(`/${locale}/procurement/new`)}>
           <Plus className="me-2 h-4 w-4" />
@@ -137,9 +137,9 @@ export default function ProcurementPage() {
         </Button>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full sm:w-48">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

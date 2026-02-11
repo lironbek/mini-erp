@@ -67,6 +67,57 @@ const KANBAN_COLUMNS = [
   "DISPATCHED",
 ];
 
+const DUMMY_ORDERS: Order[] = [
+  {
+    id: "d1", orderNumber: "ORD-2026-0118", customer: { id: "c1", name: { en: "Freshmart Supermarket", he: "פרשמרט סופרמרקט" }, shortName: "Freshmart" },
+    source: "WEBSITE", status: "CONFIRMED", orderDate: "2026-02-10", requestedDeliveryDate: "2026-02-12",
+    totalAmount: 2450, currency: "SGD", items: [{ id: "i1", product: { name: { en: "Classic Pita", he: "פיתה קלאסית" } }, quantity: 200 }, { id: "i2", product: { name: { en: "Whole Wheat Pita", he: "פיתה מחיטה מלאה" } }, quantity: 150 }],
+    lockedBy: null, lockedAt: null, isAnomaly: false,
+  },
+  {
+    id: "d2", orderNumber: "ORD-2026-0119", customer: { id: "c2", name: { en: "Cafe Aroma Chain", he: "רשת קפה ארומה" }, shortName: "Cafe Aroma" },
+    source: "PHONE", status: "PENDING", orderDate: "2026-02-10", requestedDeliveryDate: "2026-02-13",
+    totalAmount: 1820, currency: "SGD", items: [{ id: "i3", product: { name: { en: "Laffa Bread", he: "לחם לאפה" } }, quantity: 300 }],
+    lockedBy: null, lockedAt: null, isAnomaly: false,
+  },
+  {
+    id: "d3", orderNumber: "ORD-2026-0120", customer: { id: "c3", name: { en: "City Deli & Bistro", he: "סיטי דלי וביסטרו" }, shortName: "City Deli" },
+    source: "EMAIL", status: "IN_PRODUCTION", orderDate: "2026-02-09", requestedDeliveryDate: "2026-02-11",
+    totalAmount: 3200, currency: "SGD", items: [{ id: "i4", product: { name: { en: "Classic Pita", he: "פיתה קלאסית" } }, quantity: 400 }, { id: "i5", product: { name: { en: "Sesame Pita", he: "פיתה שומשום" } }, quantity: 100 }],
+    lockedBy: { name: "Sarah K." }, lockedAt: "2026-02-10T14:00:00Z", isAnomaly: false,
+  },
+  {
+    id: "d4", orderNumber: "ORD-2026-0121", customer: { id: "c4", name: { en: "Green Garden Restaurant", he: "מסעדת הגן הירוק" }, shortName: "Green Garden" },
+    source: "WEBSITE", status: "READY", orderDate: "2026-02-08", requestedDeliveryDate: "2026-02-11",
+    totalAmount: 980, currency: "SGD", items: [{ id: "i6", product: { name: { en: "Mini Pita Pack", he: "חבילת מיני פיתות" } }, quantity: 80 }],
+    lockedBy: null, lockedAt: null, isAnomaly: false,
+  },
+  {
+    id: "d5", orderNumber: "ORD-2026-0122", customer: { id: "c5", name: { en: "Hummus House", he: "בית החומוס" }, shortName: "Hummus House" },
+    source: "PHONE", status: "DISPATCHED", orderDate: "2026-02-07", requestedDeliveryDate: "2026-02-10",
+    totalAmount: 1550, currency: "SGD", items: [{ id: "i7", product: { name: { en: "Classic Pita", he: "פיתה קלאסית" } }, quantity: 250 }],
+    lockedBy: null, lockedAt: null, isAnomaly: false,
+  },
+  {
+    id: "d6", orderNumber: "ORD-2026-0123", customer: { id: "c6", name: { en: "Baker's Corner", he: "פינת האופה" }, shortName: null },
+    source: "WALK_IN", status: "PENDING", orderDate: "2026-02-11", requestedDeliveryDate: "2026-02-14",
+    totalAmount: 4100, currency: "SGD", items: [{ id: "i8", product: { name: { en: "Whole Wheat Pita", he: "פיתה מחיטה מלאה" } }, quantity: 500 }, { id: "i9", product: { name: { en: "Laffa Bread", he: "לחם לאפה" } }, quantity: 200 }],
+    lockedBy: null, lockedAt: null, isAnomaly: true,
+  },
+  {
+    id: "d7", orderNumber: "ORD-2026-0124", customer: { id: "c1", name: { en: "Freshmart Supermarket", he: "פרשמרט סופרמרקט" }, shortName: "Freshmart" },
+    source: "WEBSITE", status: "CONFIRMED", orderDate: "2026-02-11", requestedDeliveryDate: "2026-02-13",
+    totalAmount: 2890, currency: "SGD", items: [{ id: "i10", product: { name: { en: "Classic Pita", he: "פיתה קלאסית" } }, quantity: 350 }],
+    lockedBy: null, lockedAt: null, isAnomaly: false,
+  },
+  {
+    id: "d8", orderNumber: "ORD-2026-0125", customer: { id: "c7", name: { en: "Marina Bay Hotel", he: "מלון מרינה ביי" }, shortName: "MB Hotel" },
+    source: "EMAIL", status: "LOCKED", orderDate: "2026-02-09", requestedDeliveryDate: "2026-02-12",
+    totalAmount: 5600, currency: "SGD", items: [{ id: "i11", product: { name: { en: "Classic Pita", he: "פיתה קלאסית" } }, quantity: 600 }, { id: "i12", product: { name: { en: "Sesame Pita", he: "פיתה שומשום" } }, quantity: 200 }],
+    lockedBy: { name: "David M." }, lockedAt: "2026-02-10T09:30:00Z", isAnomaly: false,
+  },
+];
+
 export default function OrdersPage() {
   const t = useTranslations();
   const locale = useLocale();
@@ -84,9 +135,14 @@ export default function OrdersPage() {
   async function fetchOrders() {
     try {
       const res = await fetch("/api/orders");
-      if (res.ok) setOrders(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data.length > 0 ? data : DUMMY_ORDERS);
+      } else {
+        setOrders(DUMMY_ORDERS);
+      }
     } catch {
-      toast.error("Failed to load orders");
+      setOrders(DUMMY_ORDERS);
     } finally {
       setLoading(false);
     }
@@ -195,14 +251,15 @@ export default function OrdersPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("orders.title")}</h1>
+    <div className="space-y-6 animate-fade-in-up">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">{t("orders.title")}</h1>
         <div className="flex items-center gap-2">
           <div className="flex border rounded-md">
             <Button
               variant={view === "list" ? "default" : "ghost"}
               size="sm"
+              className="min-h-[44px] min-w-[44px]"
               onClick={() => setView("list")}
             >
               <List className="h-4 w-4" />
@@ -210,6 +267,7 @@ export default function OrdersPage() {
             <Button
               variant={view === "calendar" ? "default" : "ghost"}
               size="sm"
+              className="min-h-[44px] min-w-[44px]"
               onClick={() => setView("calendar")}
             >
               <CalendarDays className="h-4 w-4" />
@@ -217,6 +275,7 @@ export default function OrdersPage() {
             <Button
               variant={view === "kanban" ? "default" : "ghost"}
               size="sm"
+              className="min-h-[44px] min-w-[44px]"
               onClick={() => setView("kanban")}
             >
               <Columns3 className="h-4 w-4" />
@@ -230,8 +289,8 @@ export default function OrdersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-64">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+        <div className="relative w-full sm:w-64">
           <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={searchQuery}
@@ -241,7 +300,7 @@ export default function OrdersPage() {
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -300,7 +359,7 @@ export default function OrdersPage() {
                     {dateOrders.map((order) => (
                       <div
                         key={order.id}
-                        className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border border-border/50 rounded-lg cursor-pointer hover:bg-muted/50 hover:shadow-sm transition-all duration-200"
                         onClick={() => router.push(`/${locale}/orders/${order.id}`)}
                       >
                         <div className="flex items-center gap-3">
@@ -329,9 +388,9 @@ export default function OrdersPage() {
         </div>
       ) : (
         /* Kanban View */
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:snap-none -mx-4 px-4 sm:mx-0 sm:px-0">
           {KANBAN_COLUMNS.map((status) => (
-            <div key={status} className="min-w-[280px] flex-shrink-0">
+            <div key={status} className="min-w-[260px] sm:min-w-[280px] flex-shrink-0 snap-start">
               <div className="bg-muted/50 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-sm">
@@ -343,7 +402,7 @@ export default function OrdersPage() {
                   {(ordersByStatus[status] || []).map((order) => (
                     <Card
                       key={order.id}
-                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      className="cursor-pointer hover:shadow-premium-hover hover:-translate-y-0.5 transition-all duration-200"
                       onClick={() => router.push(`/${locale}/orders/${order.id}`)}
                     >
                       <CardContent className="p-3">

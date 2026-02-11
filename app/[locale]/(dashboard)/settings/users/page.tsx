@@ -162,7 +162,7 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{t("users.title")}</h1>
         </div>
@@ -285,63 +285,108 @@ export default function UsersPage() {
           {loading ? (
             <p className="text-muted-foreground">{t("common.loading")}</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("users.name")}</TableHead>
-                  <TableHead>{t("users.email")}</TableHead>
-                  <TableHead>{t("users.role")}</TableHead>
-                  <TableHead>{t("users.status")}</TableHead>
-                  <TableHead>{t("users.lastLogin")}</TableHead>
-                  <TableHead>{t("common.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("users.name")}</TableHead>
+                      <TableHead>{t("users.email")}</TableHead>
+                      <TableHead>{t("users.role")}</TableHead>
+                      <TableHead>{t("users.status")}</TableHead>
+                      <TableHead>{t("users.lastLogin")}</TableHead>
+                      <TableHead>{t("common.actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {t(`users.roles.${user.role.toLowerCase()}`)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={user.isActive ? "default" : "destructive"}
+                          >
+                            {user.isActive ? t("common.active") : t("common.inactive")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.lastLogin
+                            ? new Date(user.lastLogin).toLocaleDateString()
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditDialog(user)}
+                            >
+                              {t("common.edit")}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={user.isActive ? "destructive" : "default"}
+                              onClick={() => toggleUserActive(user)}
+                            >
+                              {user.isActive
+                                ? t("users.deactivateUser")
+                                : t("users.activateUser")}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
                 {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {t(`users.roles.${user.role.toLowerCase()}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
+                  <div key={user.id} className="border rounded-lg p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{user.name}</span>
                       <Badge
                         variant={user.isActive ? "default" : "destructive"}
                       >
                         {user.isActive ? t("common.active") : t("common.inactive")}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {user.lastLogin
-                        ? new Date(user.lastLogin).toLocaleDateString()
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openEditDialog(user)}
-                        >
-                          {t("common.edit")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={user.isActive ? "destructive" : "default"}
-                          onClick={() => toggleUserActive(user)}
-                        >
-                          {user.isActive
-                            ? t("users.deactivateUser")
-                            : t("users.activateUser")}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">
+                        {t(`users.roles.${user.role.toLowerCase()}`)}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEditDialog(user)}
+                      >
+                        {t("common.edit")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={user.isActive ? "destructive" : "default"}
+                        onClick={() => toggleUserActive(user)}
+                      >
+                        {user.isActive
+                          ? t("users.deactivateUser")
+                          : t("users.activateUser")}
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
