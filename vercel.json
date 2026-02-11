@@ -1,0 +1,10 @@
+{
+  "framework": "nextjs",
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/cron/daily-check",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}
