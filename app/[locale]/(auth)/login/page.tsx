@@ -95,13 +95,14 @@ export default function LoginPage() {
 
       {/* Right side - login form */}
       <div className="flex w-full lg:w-1/2 flex-col items-center justify-center bg-background p-6 sm:p-12 relative overflow-hidden">
-        {/* Background image with high transparency */}
-        <div className="absolute inset-0 z-0">
+        {/* Background logo */}
+        <div className="absolute inset-0 z-0 flex items-center justify-center">
           <Image
-            src="/login-bg.jpeg"
+            src="/logo-pita.jpeg"
             alt=""
-            fill
-            className="object-cover opacity-[0.07]"
+            width={500}
+            height={500}
+            className="opacity-[0.35] rounded-full"
             priority
           />
         </div>
@@ -149,7 +150,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="ps-10 h-11 bg-muted/30 border-border/60 focus:bg-background transition-colors"
+                  className="ps-10 h-11 bg-background/90 border-border shadow-sm backdrop-blur-sm focus:bg-background transition-colors"
                 />
               </div>
             </div>
@@ -167,7 +168,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="ps-10 pe-10 h-11 bg-muted/30 border-border/60 focus:bg-background transition-colors"
+                  className="ps-10 pe-10 h-11 bg-background/90 border-border shadow-sm backdrop-blur-sm focus:bg-background transition-colors"
                 />
                 <button
                   type="button"
