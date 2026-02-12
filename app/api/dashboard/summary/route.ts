@@ -16,6 +16,8 @@ export async function GET() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+  const thirtyDaysAgo = new Date(todayStart);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   const [
     ordersToday,
@@ -25,6 +27,9 @@ export async function GET() {
     revenueLastMonth,
     costsMTD,
     costsLastMonth,
+    pendingOrderCount,
+    deliveredOrders,
+    orderStatusPipeline,
   ] = await Promise.all([
     // Orders today
     prisma.order.count({
@@ -76,6 +81,27 @@ export async function GET() {
         movementType: "PURCHASE_RECEIPT",
       },
     }),
+    // Pending order count (PENDING or DRAFT)
+    prisma.order.count({
+      where: { status: { in: ["PENDING", "DRAFT"] } },
+    }),
+    // Delivered orders in last 30 days (for fulfillment rate)
+    prisma.order.findMany({
+      where: {
+        status: "DELIVERED",
+        updatedAt: { gte: thirtyDaysAgo },
+      },
+      select: {
+        requestedDeliveryDate: true,
+        confirmedDeliveryDate: true,
+      },
+    }),
+    // Order status pipeline (non-CANCELLED, grouped by status)
+    prisma.order.groupBy({
+      by: ["status"],
+      _count: { status: true },
+      where: { status: { not: "CANCELLED" } },
+    }),
   ]);
 
   const revMTD = Number(revenueMTD._sum.totalAmount || 0);
@@ -84,6 +110,14 @@ export async function GET() {
   const cstLM = Number(costsLastMonth._sum.totalCost || 0);
   const marginMTD = revMTD > 0 ? ((revMTD - cstMTD) / revMTD) * 100 : 0;
   const marginLM = revLM > 0 ? ((revLM - cstLM) / revLM) * 100 : 0;
+
+  // Calculate fulfillment rate: % of delivered orders that were on time
+  const totalDelivered = deliveredOrders.length;
+  const onTimeCount = deliveredOrders.filter((order) => {
+    const deliveryDate = order.confirmedDeliveryDate ?? order.requestedDeliveryDate;
+    return deliveryDate <= order.requestedDeliveryDate;
+  }).length;
+  const fulfillmentRate = totalDelivered > 0 ? (onTimeCount / totalDelivered) * 100 : 0;
 
   return NextResponse.json({
     ordersToday,
@@ -96,5 +130,11 @@ export async function GET() {
     costsMoM: cstLM > 0 ? ((cstMTD - cstLM) / cstLM) * 100 : 0,
     marginMTD,
     marginChange: marginMTD - marginLM,
+    pendingOrderCount,
+    fulfillmentRate,
+    orderStatusPipeline: orderStatusPipeline.map((g) => ({
+      status: g.status,
+      count: g._count.status,
+    })),
   });
 }

@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, ProductionLine, UnitOfMeasure, UserRole } from "@prisma/client";
+import { Prisma, PrismaClient, ProductionLine, UnitOfMeasure, UserRole, OrderStatus, OrderSource, MovementType, ItemType } from "@prisma/client";
 import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -910,6 +910,988 @@ async function main() {
   }
 
   console.log("✅ Inventory stock initialized");
+
+  // ============================================================
+  // HELPER FUNCTIONS
+  // ============================================================
+
+  function daysAgo(n: number): Date {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function randomBetween(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function randomDecimal(min: number, max: number, decimals = 2): number {
+    return Number((Math.random() * (max - min) + min).toFixed(decimals));
+  }
+
+  function padNum(n: number, len = 4): string {
+    return String(n).padStart(len, "0");
+  }
+
+  function formatDate(d: Date): string {
+    return d.toISOString().split("T")[0].replace(/-/g, "");
+  }
+
+  // ============================================================
+  // 1. ORDERS (~80 orders over 60 days)
+  // ============================================================
+
+  const customerWeights = [
+    { customer: customer1, weight: 25 },  // MBS
+    { customer: customer2, weight: 20 },  // Raffles
+    { customer: customer3, weight: 18 },  // Mandarin
+    { customer: customer4, weight: 22 },  // FairPrice
+    { customer: customer5, weight: 15 },  // Cedele
+  ];
+
+  const sourceWeights: { source: OrderSource; weight: number }[] = [
+    { source: OrderSource.MANUAL, weight: 40 },
+    { source: OrderSource.WHATSAPP, weight: 25 },
+    { source: OrderSource.EMAIL, weight: 20 },
+    { source: OrderSource.ARIBA, weight: 10 },
+    { source: OrderSource.PORTAL, weight: 5 },
+  ];
+
+  // Status distribution for 80 orders
+  const statusSequence: OrderStatus[] = [
+    ...Array(40).fill(OrderStatus.DELIVERED),
+    ...Array(12).fill(OrderStatus.DISPATCHED),
+    ...Array(6).fill(OrderStatus.READY),
+    ...Array(6).fill(OrderStatus.IN_PRODUCTION),
+    ...Array(6).fill(OrderStatus.CONFIRMED),
+    ...Array(5).fill(OrderStatus.PENDING),
+    ...Array(2).fill(OrderStatus.DRAFT),
+    ...Array(3).fill(OrderStatus.CANCELLED),
+  ];
+
+  function pickWeighted<T>(items: { item: T; weight: number }[]): T {
+    const total = items.reduce((s, i) => s + i.weight, 0);
+    let r = Math.random() * total;
+    for (const entry of items) {
+      r -= entry.weight;
+      if (r <= 0) return entry.item;
+    }
+    return items[items.length - 1].item;
+  }
+
+  const bakeryProducts = [pitaLarge, pitaSmall, pitaMedium, laffa, pitaChips, zaatar];
+  const saladsProducts = [hummus1kg, tahini500g, babaGhanoush];
+  const frozenProducts = [falafelFrozen];
+
+  const qtyRanges: Record<string, [number, number]> = {
+    [pitaLarge.id]: [80, 200],
+    [pitaSmall.id]: [60, 150],
+    [pitaMedium.id]: [40, 120],
+    [laffa.id]: [20, 60],
+    [falafelFrozen.id]: [50, 200],
+    [hummus1kg.id]: [10, 40],
+    [tahini500g.id]: [10, 30],
+    [babaGhanoush.id]: [5, 20],
+    [pitaChips.id]: [10, 50],
+    [zaatar.id]: [10, 40],
+  };
+
+  const allOrderProducts = [...bakeryProducts, ...saladsProducts, ...frozenProducts];
+
+  const createdOrders: Array<{
+    id: string;
+    orderNumber: string;
+    status: OrderStatus;
+    orderDate: Date;
+    customerId: string;
+    items: Array<{ productId: string; quantity: number; unitPrice: number; totalPrice: number }>;
+  }> = [];
+
+  let orderSeq = 1;
+  const totalOrders = 80;
+
+  // Generate order dates - more orders in recent days
+  const orderDates: Date[] = [];
+  for (let i = 0; i < totalOrders; i++) {
+    // Weight towards more recent days: use quadratic distribution
+    const t = Math.random();
+    const daysBack = Math.floor(60 * t * t); // squares bias towards 0 (recent)
+    orderDates.push(daysAgo(daysBack));
+  }
+  orderDates.sort((a, b) => a.getTime() - b.getTime());
+
+  console.log("  Creating orders...");
+
+  for (let i = 0; i < totalOrders; i++) {
+    const orderDate = orderDates[i];
+    const status = statusSequence[i];
+    const custEntry = pickWeighted(
+      customerWeights.map((c) => ({ item: c.customer, weight: c.weight }))
+    );
+    const source = pickWeighted(
+      sourceWeights.map((s) => ({ item: s.source, weight: s.weight }))
+    );
+    const createdBy = i % 2 === 0 ? admin : manager;
+
+    // Pick 2-4 random products
+    const numItems = randomBetween(2, 4);
+    const shuffled = [...allOrderProducts].sort(() => Math.random() - 0.5);
+    const selectedProducts = shuffled.slice(0, numItems);
+
+    const orderItems = selectedProducts.map((prod, idx) => {
+      const [minQ, maxQ] = qtyRanges[prod.id];
+      const qty = randomBetween(minQ, maxQ);
+      const unitPrice = Number(prod.sellingPrice);
+      return {
+        productId: prod.id,
+        quantity: qty,
+        unitPrice,
+        totalPrice: Number((qty * unitPrice).toFixed(2)),
+        sortOrder: idx + 1,
+      };
+    });
+
+    const subtotal = orderItems.reduce((s, item) => s + item.totalPrice, 0);
+    const taxAmount = Number((subtotal * 0.09).toFixed(2));
+    const totalAmount = Number((subtotal + taxAmount).toFixed(2));
+
+    const reqDelivery = new Date(orderDate);
+    reqDelivery.setDate(reqDelivery.getDate() + 1);
+
+    const confirmedStatuses: OrderStatus[] = [
+      OrderStatus.CONFIRMED,
+      OrderStatus.LOCKED,
+      OrderStatus.IN_PRODUCTION,
+      OrderStatus.READY,
+      OrderStatus.DISPATCHED,
+      OrderStatus.DELIVERED,
+    ];
+    const hasConfirmedDate = confirmedStatuses.includes(status);
+
+    const order = await prisma.order.create({
+      data: {
+        orderNumber: `ORD-${formatDate(orderDate)}-${padNum(orderSeq)}`,
+        customerId: custEntry.id,
+        source,
+        status,
+        orderDate,
+        requestedDeliveryDate: reqDelivery,
+        confirmedDeliveryDate: hasConfirmedDate ? reqDelivery : null,
+        deliverySlot: custEntry.defaultDeliverySlot,
+        subtotal,
+        taxAmount,
+        totalAmount,
+        createdById: createdBy.id,
+        createdAt: orderDate,
+        items: {
+          create: orderItems.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            sortOrder: item.sortOrder,
+          })),
+        },
+      },
+    });
+
+    createdOrders.push({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status,
+      orderDate,
+      customerId: custEntry.id,
+      items: orderItems,
+    });
+
+    orderSeq++;
+  }
+
+  console.log(`  ✅ ${createdOrders.length} orders created`);
+
+  // ============================================================
+  // 2. WORK ORDERS (~40 over 60 days)
+  // ============================================================
+
+  const productionLineWeights = [
+    { item: ProductionLine.BAKERY, weight: 60 },
+    { item: ProductionLine.SALADS, weight: 25 },
+    { item: ProductionLine.FROZEN, weight: 15 },
+  ];
+
+  const productsByLine: Record<string, typeof products> = {
+    BAKERY: bakeryProducts,
+    SALADS: saladsProducts,
+    FROZEN: frozenProducts,
+  };
+
+  const plannedQtyRanges: Record<string, [number, number]> = {
+    BAKERY: [100, 300],
+    SALADS: [30, 80],
+    FROZEN: [100, 300],
+  };
+
+  const wasteReasons = [
+    "overproduction",
+    "quality_reject",
+    "machine_error",
+    "raw_material_defect",
+    "expired",
+  ];
+
+  // WO statuses: completed(30), in_progress(2), planned(4), cancelled(4)
+  const woStatusSequence: string[] = [
+    ...Array(30).fill("completed"),
+    ...Array(2).fill("in_progress"),
+    ...Array(4).fill("planned"),
+    ...Array(4).fill("cancelled"),
+  ];
+
+  // Generate work dates - weekdays only over 60 days
+  const workDates: Date[] = [];
+  for (let d = 60; d >= 0; d--) {
+    const date = daysAgo(d);
+    const dow = date.getDay();
+    if (dow !== 0 && dow !== 6) {
+      workDates.push(date);
+    }
+  }
+
+  // Pick ~40 dates spread across the available weekdays
+  const selectedWorkDates: Date[] = [];
+  const step = Math.max(1, Math.floor(workDates.length / 40));
+  for (let i = 0; i < workDates.length && selectedWorkDates.length < 40; i += step) {
+    selectedWorkDates.push(workDates[i]);
+  }
+  // If we didn't get 40, fill remaining from unused dates
+  if (selectedWorkDates.length < 40) {
+    for (const wd of workDates) {
+      if (selectedWorkDates.length >= 40) break;
+      if (!selectedWorkDates.includes(wd)) {
+        selectedWorkDates.push(wd);
+      }
+    }
+  }
+  selectedWorkDates.sort((a, b) => a.getTime() - b.getTime());
+
+  const createdWorkOrders: Array<{
+    id: string;
+    woNumber: string;
+    productionDate: Date;
+    productionLine: ProductionLine;
+    status: string;
+    plannedStart: Date;
+    actualStart: Date | null;
+    actualEnd: Date | null;
+    items: Array<{
+      id: string;
+      productId: string;
+      bomId: string | null;
+      plannedQuantity: number;
+      producedQuantity: number;
+      wasteQuantity: number;
+      wasteReason: string | null;
+      batchNumber: string;
+      expiryDate: Date;
+      status: string;
+    }>;
+  }> = [];
+
+  let woSeq = 1;
+  let batchSeq = 1;
+
+  console.log("  Creating work orders...");
+
+  for (let i = 0; i < selectedWorkDates.length; i++) {
+    const prodDate = selectedWorkDates[i];
+    const woStatus = woStatusSequence[i] || "planned";
+    const line = pickWeighted(productionLineWeights);
+    const lineProducts = productsByLine[line];
+
+    const plannedStart = new Date(prodDate);
+    plannedStart.setHours(5, 0, 0, 0);
+
+    let actualStart: Date | null = null;
+    let actualEnd: Date | null = null;
+
+    if (woStatus === "completed" || woStatus === "in_progress") {
+      actualStart = new Date(plannedStart);
+    }
+    if (woStatus === "completed") {
+      const hoursToComplete = randomBetween(3, 6);
+      actualEnd = new Date(plannedStart);
+      actualEnd.setHours(actualEnd.getHours() + hoursToComplete);
+    }
+
+    // Pick 2-3 items from the production line
+    const numWoItems = Math.min(randomBetween(2, 3), lineProducts.length);
+    const shuffledLineProducts = [...lineProducts].sort(() => Math.random() - 0.5);
+    const woProducts = shuffledLineProducts.slice(0, numWoItems);
+
+    const woItemsData: Array<{
+      productId: string;
+      bomId: string | null;
+      plannedQuantity: number;
+      producedQuantity: number;
+      wasteQuantity: number;
+      wasteReason: string | null;
+      batchNumber: string;
+      productionDate: Date;
+      expiryDate: Date;
+      status: string;
+      sortOrder: number;
+    }> = [];
+
+    for (let j = 0; j < woProducts.length; j++) {
+      const prod = woProducts[j];
+      const [minPQ, maxPQ] = plannedQtyRanges[line];
+      const plannedQty = randomBetween(minPQ, maxPQ);
+
+      // Find BOM for this product
+      const bom = await prisma.bom.findFirst({
+        where: { productId: prod.id, isActive: true },
+      });
+
+      let producedQty = 0;
+      let wasteQty = 0;
+      let wasteReason: string | null = null;
+      let itemStatus = "pending";
+
+      if (woStatus === "completed") {
+        producedQty = Math.round(plannedQty * randomDecimal(0.9, 1.05, 2));
+        wasteQty = Math.round(producedQty * randomDecimal(0.02, 0.08, 3));
+        wasteReason = wasteReasons[randomBetween(0, wasteReasons.length - 1)];
+        itemStatus = "completed";
+      } else if (woStatus === "in_progress") {
+        producedQty = Math.round(plannedQty * randomDecimal(0.3, 0.6, 2));
+        wasteQty = Math.round(producedQty * randomDecimal(0.02, 0.05, 3));
+        wasteReason = wasteReasons[randomBetween(0, wasteReasons.length - 1)];
+        itemStatus = "in_progress";
+      }
+
+      const batchNumber = `B-${formatDate(prodDate)}-${padNum(batchSeq)}`;
+      batchSeq++;
+
+      const expiryDate = new Date(prodDate);
+      expiryDate.setDate(expiryDate.getDate() + prod.shelfLifeDays);
+
+      woItemsData.push({
+        productId: prod.id,
+        bomId: bom?.id || null,
+        plannedQuantity: plannedQty,
+        producedQuantity: producedQty,
+        wasteQuantity: wasteQty,
+        wasteReason,
+        batchNumber,
+        productionDate: prodDate,
+        expiryDate,
+        status: itemStatus,
+        sortOrder: j + 1,
+      });
+    }
+
+    const wo = await prisma.workOrder.create({
+      data: {
+        woNumber: `WO-${formatDate(prodDate)}-${padNum(woSeq)}`,
+        productionDate: prodDate,
+        productionLine: line,
+        status: woStatus,
+        plannedStart,
+        actualStart,
+        actualEnd,
+        createdById: production.id,
+        createdAt: prodDate,
+        items: {
+          create: woItemsData.map((item) => ({
+            productId: item.productId,
+            bomId: item.bomId,
+            plannedQuantity: item.plannedQuantity,
+            producedQuantity: item.producedQuantity,
+            wasteQuantity: item.wasteQuantity,
+            wasteReason: item.wasteReason,
+            batchNumber: item.batchNumber,
+            productionDate: item.productionDate,
+            expiryDate: item.expiryDate,
+            status: item.status,
+            sortOrder: item.sortOrder,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    createdWorkOrders.push({
+      id: wo.id,
+      woNumber: wo.woNumber,
+      productionDate: prodDate,
+      productionLine: line,
+      status: woStatus,
+      plannedStart,
+      actualStart,
+      actualEnd,
+      items: wo.items.map((woItem, idx) => ({
+        id: woItem.id,
+        productId: woItem.productId,
+        bomId: woItem.bomId,
+        plannedQuantity: Number(woItem.plannedQuantity),
+        producedQuantity: Number(woItem.producedQuantity),
+        wasteQuantity: Number(woItem.wasteQuantity),
+        wasteReason: woItem.wasteReason,
+        batchNumber: woItemsData[idx].batchNumber,
+        expiryDate: woItemsData[idx].expiryDate,
+        status: woItem.status,
+      })),
+    });
+
+    woSeq++;
+  }
+
+  console.log(`  ✅ ${createdWorkOrders.length} work orders created`);
+
+  // ============================================================
+  // 3. PRODUCTION REPORTS (one per completed WorkOrderItem)
+  // ============================================================
+
+  console.log("  Creating production reports...");
+
+  let prodReportCount = 0;
+  const completedWOs = createdWorkOrders.filter((wo) => wo.status === "completed");
+
+  for (const wo of completedWOs) {
+    for (const woItem of wo.items) {
+      if (woItem.status === "completed" && woItem.producedQuantity > 0) {
+        const prodTimestamp = new Date(wo.plannedStart);
+        prodTimestamp.setHours(prodTimestamp.getHours() + 2);
+
+        await prisma.productionReport.create({
+          data: {
+            workOrderItemId: woItem.id,
+            reportedById: production.id,
+            quantityProduced: woItem.producedQuantity,
+            quantityWaste: woItem.wasteQuantity,
+            wasteReason: woItem.wasteReason,
+            batchNumber: woItem.batchNumber,
+            productionTimestamp: prodTimestamp,
+          },
+        });
+        prodReportCount++;
+      }
+    }
+  }
+
+  console.log(`  ✅ ${prodReportCount} production reports created`);
+
+  // ============================================================
+  // 4. PURCHASE ORDERS (~15 POs)
+  // ============================================================
+
+  console.log("  Creating purchase orders...");
+
+  // Supplier -> materials mapping
+  const supplier1Materials = [flour55, flour00, yeast, packagingBag, packagingTub]; // SFM: flour, packaging
+  const supplier2Materials = [oliveOil, vegetableOil]; // APO: oils
+  const supplier3Materials = [salt, sugar, tahiniRaw, chickpeas, lemon, garlic, cumin, eggplant]; // SIT: spices, others
+
+  const poStatusSequence: string[] = [
+    ...Array(9).fill("received"),
+    ...Array(2).fill("partially_received"),
+    ...Array(2).fill("confirmed"),
+    ...Array(1).fill("sent"),
+    ...Array(1).fill("draft"),
+  ];
+
+  interface CreatedPO {
+    id: string;
+    poNumber: string;
+    supplierId: string;
+    status: string;
+    orderDate: Date;
+    items: Array<{
+      id: string;
+      rawMaterialId: string;
+      quantityOrdered: number;
+      quantityReceived: number;
+      unitPrice: number;
+      unit: UnitOfMeasure;
+    }>;
+  }
+
+  const createdPOs: CreatedPO[] = [];
+  let poSeq = 1;
+
+  const supplierConfigs = [
+    { supplier: supplier1, materials: supplier1Materials, freq: 6 },  // 6 POs
+    { supplier: supplier2, materials: supplier2Materials, freq: 4 },  // 4 POs
+    { supplier: supplier3, materials: supplier3Materials, freq: 5 },  // 5 POs
+  ];
+
+  // Qty ranges for PO items by category
+  const poQtyRanges: Record<string, [number, number]> = {
+    flour: [100, 300],
+    oil: [20, 60],
+    spice: [5, 15],
+    baking: [5, 20],
+    paste: [20, 60],
+    legume: [30, 80],
+    fruit: [10, 25],
+    packaging: [200, 500],
+    vegetable: [15, 40],
+  };
+
+  for (const config of supplierConfigs) {
+    for (let p = 0; p < config.freq; p++) {
+      const poStatus = poStatusSequence[createdPOs.length] || "draft";
+      const poDaysAgo = randomBetween(5, 55);
+      const poOrderDate = daysAgo(poDaysAgo);
+
+      // Pick 2-4 materials from this supplier
+      const numItems = Math.min(randomBetween(2, 4), config.materials.length);
+      const shuffledMats = [...config.materials].sort(() => Math.random() - 0.5);
+      const selectedMats = shuffledMats.slice(0, numItems);
+
+      const poItemsData = selectedMats.map((mat, idx) => {
+        const category = mat.category || "other";
+        const [minQ, maxQ] = poQtyRanges[category] || [10, 50];
+        const qtyOrdered = randomDecimal(minQ, maxQ, 1);
+        const basePrice = Number(mat.lastPurchasePrice || 1);
+        const unitPrice = Number((basePrice * randomDecimal(0.95, 1.05, 4)).toFixed(4));
+
+        let qtyReceived = 0;
+        if (poStatus === "received") {
+          qtyReceived = qtyOrdered;
+        } else if (poStatus === "partially_received") {
+          qtyReceived = Number((qtyOrdered * randomDecimal(0.4, 0.7, 2)).toFixed(1));
+        }
+
+        return {
+          rawMaterialId: mat.id,
+          quantityOrdered: qtyOrdered,
+          quantityReceived: qtyReceived,
+          unit: mat.unitOfMeasure,
+          unitPrice,
+          totalPrice: Number((qtyOrdered * unitPrice).toFixed(2)),
+          sortOrder: idx + 1,
+        };
+      });
+
+      const poSubtotal = poItemsData.reduce((s, item) => s + item.totalPrice, 0);
+      const poTax = Number((poSubtotal * 0.09).toFixed(2));
+      const poTotal = Number((poSubtotal + poTax).toFixed(2));
+
+      const expectedDelivery = new Date(poOrderDate);
+      expectedDelivery.setDate(expectedDelivery.getDate() + config.supplier.leadTimeDays);
+
+      let actualDelivery: Date | null = null;
+      if (poStatus === "received" || poStatus === "partially_received") {
+        actualDelivery = new Date(expectedDelivery);
+        actualDelivery.setDate(actualDelivery.getDate() + randomBetween(-1, 1));
+      }
+
+      const po = await prisma.purchaseOrder.create({
+        data: {
+          poNumber: `PO-${formatDate(poOrderDate)}-${padNum(poSeq)}`,
+          supplierId: config.supplier.id,
+          status: poStatus,
+          orderDate: poOrderDate,
+          expectedDeliveryDate: expectedDelivery,
+          actualDeliveryDate: actualDelivery,
+          subtotal: poSubtotal,
+          taxAmount: poTax,
+          totalAmount: poTotal,
+          createdById: admin.id,
+          createdAt: poOrderDate,
+          items: {
+            create: poItemsData.map((item) => ({
+              rawMaterialId: item.rawMaterialId,
+              quantityOrdered: item.quantityOrdered,
+              quantityReceived: item.quantityReceived,
+              unit: item.unit,
+              unitPrice: item.unitPrice,
+              totalPrice: item.totalPrice,
+              sortOrder: item.sortOrder,
+            })),
+          },
+        },
+        include: { items: true },
+      });
+
+      createdPOs.push({
+        id: po.id,
+        poNumber: po.poNumber,
+        supplierId: config.supplier.id,
+        status: poStatus,
+        orderDate: poOrderDate,
+        items: po.items.map((item) => ({
+          id: item.id,
+          rawMaterialId: item.rawMaterialId,
+          quantityOrdered: Number(item.quantityOrdered),
+          quantityReceived: Number(item.quantityReceived),
+          unitPrice: Number(item.unitPrice),
+          unit: item.unit,
+        })),
+      });
+
+      poSeq++;
+    }
+  }
+
+  console.log(`  ✅ ${createdPOs.length} purchase orders created`);
+
+  // ============================================================
+  // 5. INVENTORY MOVEMENTS (~150+)
+  // ============================================================
+
+  console.log("  Creating inventory movements...");
+
+  let movementCount = 0;
+
+  // 5a. PRODUCTION_OUTPUT for each completed work order item
+  for (const wo of completedWOs) {
+    for (const woItem of wo.items) {
+      if (woItem.status === "completed" && woItem.producedQuantity > 0) {
+        const prod = products.find((p) => p.id === woItem.productId);
+        if (!prod) continue;
+
+        await prisma.inventoryMovement.create({
+          data: {
+            itemType: ItemType.FINISHED_GOOD,
+            productId: woItem.productId,
+            movementType: MovementType.PRODUCTION_OUTPUT,
+            quantity: woItem.producedQuantity,
+            unit: prod.unitOfMeasure,
+            referenceType: "work_order",
+            referenceId: wo.id,
+            batchNumber: woItem.batchNumber,
+            expiryDate: woItem.expiryDate,
+            reportedById: production.id,
+            createdAt: wo.actualEnd || wo.plannedStart,
+          },
+        });
+        movementCount++;
+
+        // 5b. PRODUCTION_INPUT for each BOM item
+        if (woItem.bomId) {
+          const bomItems = await prisma.bomItem.findMany({
+            where: { bomId: woItem.bomId },
+            include: { rawMaterial: true },
+          });
+
+          for (const bomItem of bomItems) {
+            // Calculate expected consumption: (producedQuantity / standardBatchSize) * bomItem.quantity
+            const bom = await prisma.bom.findUnique({ where: { id: woItem.bomId! } });
+            const batchSize = Number(bom?.standardBatchSize || 100);
+            const expectedQty = (woItem.producedQuantity / batchSize) * Number(bomItem.quantity);
+            const actualQty = Number((expectedQty * randomDecimal(0.95, 1.08, 3)).toFixed(3));
+
+            await prisma.inventoryMovement.create({
+              data: {
+                itemType: ItemType.RAW_MATERIAL,
+                rawMaterialId: bomItem.rawMaterialId,
+                movementType: MovementType.PRODUCTION_INPUT,
+                quantity: -Math.abs(actualQty),
+                unit: bomItem.unit,
+                referenceType: "work_order",
+                referenceId: wo.id,
+                batchNumber: woItem.batchNumber,
+                reportedById: production.id,
+                createdAt: wo.actualStart || wo.plannedStart,
+              },
+            });
+            movementCount++;
+          }
+        }
+      }
+    }
+  }
+
+  // 5c. PURCHASE_RECEIPT for each received/partially_received PO item
+  const receivedPOs = createdPOs.filter(
+    (po) => po.status === "received" || po.status === "partially_received"
+  );
+
+  for (const po of receivedPOs) {
+    for (const poItem of po.items) {
+      if (poItem.quantityReceived > 0) {
+        await prisma.inventoryMovement.create({
+          data: {
+            itemType: ItemType.RAW_MATERIAL,
+            rawMaterialId: poItem.rawMaterialId,
+            movementType: MovementType.PURCHASE_RECEIPT,
+            quantity: poItem.quantityReceived,
+            unit: poItem.unit,
+            referenceType: "purchase_order",
+            referenceId: po.id,
+            costPerUnit: poItem.unitPrice,
+            totalCost: Number((poItem.quantityReceived * poItem.unitPrice).toFixed(2)),
+            reportedById: admin.id,
+            createdAt: po.orderDate,
+          },
+        });
+        movementCount++;
+      }
+    }
+  }
+
+  // 5d. WASTE movements (~10)
+  for (let w = 0; w < 10; w++) {
+    const wasteProduct = products[randomBetween(0, products.length - 1)];
+    const wasteDate = daysAgo(randomBetween(1, 40));
+    const wasteQty = randomDecimal(2, 15, 1);
+
+    await prisma.inventoryMovement.create({
+      data: {
+        itemType: ItemType.FINISHED_GOOD,
+        productId: wasteProduct.id,
+        movementType: MovementType.WASTE,
+        quantity: -wasteQty,
+        unit: wasteProduct.unitOfMeasure,
+        referenceType: "adjustment",
+        reason: wasteReasons[randomBetween(0, wasteReasons.length - 1)],
+        reportedById: production.id,
+        createdAt: wasteDate,
+      },
+    });
+    movementCount++;
+  }
+
+  // 5e. DAMAGED movements (~5)
+  for (let dm = 0; dm < 5; dm++) {
+    const damagedMat = rawMaterials[randomBetween(0, rawMaterials.length - 1)];
+    const damageDate = daysAgo(randomBetween(1, 30));
+
+    await prisma.inventoryMovement.create({
+      data: {
+        itemType: ItemType.RAW_MATERIAL,
+        rawMaterialId: damagedMat.id,
+        movementType: MovementType.DAMAGED,
+        quantity: -randomDecimal(1, 10, 1),
+        unit: damagedMat.unitOfMeasure,
+        referenceType: "adjustment",
+        reason: "Damaged during storage/handling",
+        reportedById: admin.id,
+        createdAt: damageDate,
+      },
+    });
+    movementCount++;
+  }
+
+  // 5f. ADJUSTMENT_PLUS (~5)
+  for (let ap = 0; ap < 5; ap++) {
+    const adjProduct = products[randomBetween(0, products.length - 1)];
+    const adjDate = daysAgo(randomBetween(1, 30));
+
+    await prisma.inventoryMovement.create({
+      data: {
+        itemType: ItemType.FINISHED_GOOD,
+        productId: adjProduct.id,
+        movementType: MovementType.ADJUSTMENT_PLUS,
+        quantity: randomDecimal(5, 25, 0),
+        unit: adjProduct.unitOfMeasure,
+        referenceType: "adjustment",
+        reason: "Stock count correction - found additional stock",
+        reportedById: admin.id,
+        createdAt: adjDate,
+      },
+    });
+    movementCount++;
+  }
+
+  // 5g. ADJUSTMENT_MINUS (~5)
+  for (let am = 0; am < 5; am++) {
+    const adjMat = rawMaterials[randomBetween(0, rawMaterials.length - 1)];
+    const adjDate = daysAgo(randomBetween(1, 30));
+
+    await prisma.inventoryMovement.create({
+      data: {
+        itemType: ItemType.RAW_MATERIAL,
+        rawMaterialId: adjMat.id,
+        movementType: MovementType.ADJUSTMENT_MINUS,
+        quantity: -randomDecimal(2, 10, 1),
+        unit: adjMat.unitOfMeasure,
+        referenceType: "adjustment",
+        reason: "Stock count correction - discrepancy found",
+        reportedById: manager.id,
+        createdAt: adjDate,
+      },
+    });
+    movementCount++;
+  }
+
+  console.log(`  ✅ ${movementCount} inventory movements created`);
+
+  // ============================================================
+  // 6. NOTIFICATIONS (~25)
+  // ============================================================
+
+  console.log("  Creating notifications...");
+
+  const notificationConfigs: Array<{
+    type: string;
+    title: { en: string; he: string };
+    body: { en: string; he: string };
+  }> = [
+    // low_stock (5)
+    {
+      type: "low_stock",
+      title: { en: "Low Stock Alert: Flour Type 55", he: "התראת מלאי נמוך: קמח סוג 55" },
+      body: { en: "Flour Type 55 is below reorder point. Current stock: 85 KG. Reorder point: 100 KG.", he: "קמח סוג 55 מתחת לנקודת הזמנה. מלאי נוכחי: 85 ק\"ג. נקודת הזמנה: 100 ק\"ג." },
+    },
+    {
+      type: "low_stock",
+      title: { en: "Low Stock Alert: Fresh Yeast", he: "התראת מלאי נמוך: שמרים טריים" },
+      body: { en: "Fresh Yeast is below reorder point. Current stock: 3 KG. Reorder point: 5 KG.", he: "שמרים טריים מתחת לנקודת הזמנה. מלאי נוכחי: 3 ק\"ג. נקודת הזמנה: 5 ק\"ג." },
+    },
+    {
+      type: "low_stock",
+      title: { en: "Low Stock Alert: Olive Oil", he: "התראת מלאי נמוך: שמן זית" },
+      body: { en: "Olive Oil Extra Virgin is below reorder point. Current stock: 15 L. Reorder point: 20 L.", he: "שמן זית כתית מעולה מתחת לנקודת הזמנה. מלאי נוכחי: 15 ל. נקודת הזמנה: 20 ל." },
+    },
+    {
+      type: "low_stock",
+      title: { en: "Low Stock Alert: Chickpeas", he: "התראת מלאי נמוך: חומוס" },
+      body: { en: "Dried Chickpeas stock is running low. Current stock: 35 KG. Reorder point: 40 KG.", he: "מלאי חומוס מיובש נמוך. מלאי נוכחי: 35 ק\"ג. נקודת הזמנה: 40 ק\"ג." },
+    },
+    {
+      type: "low_stock",
+      title: { en: "Low Stock Alert: Packaging Bags", he: "התראת מלאי נמוך: שקיות אריזה" },
+      body: { en: "Packaging Bag 20pk below reorder point. Current: 180 PCS. Reorder: 200 PCS.", he: "שקית אריזה 20 יח מתחת לנקודת הזמנה. נוכחי: 180 יח. הזמנה: 200 יח." },
+    },
+    // order_reminder (5)
+    {
+      type: "order_reminder",
+      title: { en: "Order Reminder: MBS Delivery Tomorrow", he: "תזכורת הזמנה: משלוח MBS מחר" },
+      body: { en: "Order ORD-20260211 for Marina Bay Sands is scheduled for delivery tomorrow at 06:00-08:00.", he: "הזמנה ORD-20260211 עבור מרינה ביי סנדס מתוכננת למשלוח מחר ב-06:00-08:00." },
+    },
+    {
+      type: "order_reminder",
+      title: { en: "Order Reminder: Raffles Hotel", he: "תזכורת הזמנה: מלון רפלס" },
+      body: { en: "Order for Raffles Hotel pending confirmation. Please review and confirm.", he: "הזמנה למלון רפלס ממתינה לאישור. נא לבדוק ולאשר." },
+    },
+    {
+      type: "order_reminder",
+      title: { en: "Order Cutoff Approaching: FairPrice", he: "מועד סיום הזמנות מתקרב: FairPrice" },
+      body: { en: "Order cutoff for FairPrice is at 15:00 today. 2 pending orders need confirmation.", he: "מועד סיום הזמנות FairPrice ב-15:00 היום. 2 הזמנות ממתינות לאישור." },
+    },
+    {
+      type: "order_reminder",
+      title: { en: "Recurring Order Due: Cedele", he: "הזמנה חוזרת: Cedele" },
+      body: { en: "Weekly recurring order for Cedele Restaurant Group is due today.", he: "הזמנה שבועית חוזרת עבור קבוצת מסעדות Cedele מגיעה היום." },
+    },
+    {
+      type: "order_reminder",
+      title: { en: "Order Locked: Mandarin Oriental", he: "הזמנה ננעלה: מנדרין אוריינטל" },
+      body: { en: "Order for Mandarin Oriental has been locked for production. No further changes allowed.", he: "הזמנה עבור מנדרין אוריינטל ננעלה לייצור. לא ניתן לבצע שינויים נוספים." },
+    },
+    // production_complete (5)
+    {
+      type: "production_complete",
+      title: { en: "Production Complete: Pita Large Batch", he: "ייצור הושלם: מנת פיתה גדולה" },
+      body: { en: "Work order WO completed. 250 pcs of Pita Bread Large produced. Waste: 12 pcs (4.8%).", he: "הזמנת עבודה WO הושלמה. 250 יח פיתה גדולה יוצרו. פסולת: 12 יח (4.8%)." },
+    },
+    {
+      type: "production_complete",
+      title: { en: "Production Complete: Hummus Batch", he: "ייצור הושלם: מנת חומוס" },
+      body: { en: "Hummus 1kg batch completed. 45 tubs produced with 2 tubs waste.", he: "מנת חומוס 1 ק\"ג הושלמה. 45 מיכלים יוצרו עם 2 מיכלי פסולת." },
+    },
+    {
+      type: "production_complete",
+      title: { en: "Production Complete: Falafel Batch", he: "ייצור הושלם: מנת פלאפל" },
+      body: { en: "Frozen Falafel production complete. 180 pcs produced and moved to freezer.", he: "ייצור פלאפל קפוא הושלם. 180 יח יוצרו והועברו למקפיא." },
+    },
+    {
+      type: "production_complete",
+      title: { en: "Production Complete: Laffa Batch", he: "ייצור הושלם: מנת לאפה" },
+      body: { en: "Laffa Flatbread batch completed. 48 pcs produced. Ready for dispatch.", he: "מנת לאפה הושלמה. 48 יח יוצרו. מוכן למשלוח." },
+    },
+    {
+      type: "production_complete",
+      title: { en: "Production Complete: Za'atar Manakish", he: "ייצור הושלם: מנאקיש זעתר" },
+      body: { en: "Za'atar Manakish batch complete. 60 pcs produced with excellent quality.", he: "מנת מנאקיש זעתר הושלמה. 60 יח יוצרו באיכות מצוינת." },
+    },
+    // po_delivered (3)
+    {
+      type: "po_delivered",
+      title: { en: "PO Delivered: Singapore Flour Mills", he: "הזמנת רכש התקבלה: טחנות קמח סינגפור" },
+      body: { en: "Purchase order from Singapore Flour Mills received. 200 KG Flour Type 55 + 150 KG Flour Type 00.", he: "הזמנת רכש מטחנות קמח סינגפור התקבלה. 200 ק\"ג קמח 55 + 150 ק\"ג קמח 00." },
+    },
+    {
+      type: "po_delivered",
+      title: { en: "PO Delivered: Asia Pacific Oils", he: "הזמנת רכש התקבלה: שמני אסיה פסיפיק" },
+      body: { en: "Olive Oil and Vegetable Oil delivery received from Asia Pacific Oils.", he: "משלוח שמן זית ושמן צמחי התקבל משמני אסיה פסיפיק." },
+    },
+    {
+      type: "po_delivered",
+      title: { en: "PO Partially Received: Spice Island", he: "הזמנת רכש התקבלה חלקית: אי התבלינים" },
+      body: { en: "Partial delivery from Spice Island Trading. Chickpeas received, tahini still pending.", he: "משלוח חלקי מסחר אי התבלינים. חומוס התקבל, טחינה עדיין בהמתנה." },
+    },
+    // expiry_warning (3)
+    {
+      type: "expiry_warning",
+      title: { en: "Expiry Warning: Pita Bread Large", he: "התראת תפוגה: פיתה גדולה" },
+      body: { en: "50 pcs of Pita Bread Large (Batch B-20260208) expire in 2 days.", he: "50 יח פיתה גדולה (מנה B-20260208) פגות תוקף בעוד 2 ימים." },
+    },
+    {
+      type: "expiry_warning",
+      title: { en: "Expiry Warning: Hummus 1kg", he: "התראת תפוגה: חומוס 1 ק\"ג" },
+      body: { en: "15 tubs of Hummus 1kg approaching expiry. Batch B-20260205 expires in 3 days.", he: "15 מיכלי חומוס 1 ק\"ג מתקרבים לתפוגה. מנה B-20260205 פגה בעוד 3 ימים." },
+    },
+    {
+      type: "expiry_warning",
+      title: { en: "Expiry Warning: Baba Ghanoush", he: "התראת תפוגה: בבא גנוש" },
+      body: { en: "8 tubs of Baba Ghanoush 1kg (Batch B-20260206) expire tomorrow.", he: "8 מיכלי בבא גנוש 1 ק\"ג (מנה B-20260206) פגים מחר." },
+    },
+    // system (4)
+    {
+      type: "system",
+      title: { en: "System Update: New Features Available", he: "עדכון מערכת: תכונות חדשות זמינות" },
+      body: { en: "New dashboard analytics and WhatsApp integration features are now available.", he: "ניתוח לוח מחוונים חדש ותכונות שילוב WhatsApp זמינים כעת." },
+    },
+    {
+      type: "system",
+      title: { en: "Scheduled Maintenance: Sunday 2am-4am", he: "תחזוקה מתוכננת: יום ראשון 2:00-4:00" },
+      body: { en: "System maintenance scheduled for Sunday 2:00 AM - 4:00 AM SGT. Brief downtime expected.", he: "תחזוקת מערכת מתוכננת ליום ראשון 2:00-4:00 לפנות בוקר. צפוי השבתה קצרה." },
+    },
+    {
+      type: "system",
+      title: { en: "Daily Summary: Production Report", he: "סיכום יומי: דוח ייצור" },
+      body: { en: "Today's production: 450 pita, 35 hummus, 120 falafel. All targets met.", he: "ייצור היום: 450 פיתות, 35 חומוס, 120 פלאפל. כל היעדים הושגו." },
+    },
+    {
+      type: "system",
+      title: { en: "Backup Complete", he: "גיבוי הושלם" },
+      body: { en: "Nightly database backup completed successfully at 03:00 AM.", he: "גיבוי מסד נתונים לילי הושלם בהצלחה ב-03:00 לפנות בוקר." },
+    },
+  ];
+
+  const notifUsers = [admin, manager];
+
+  for (let n = 0; n < notificationConfigs.length; n++) {
+    const config = notificationConfigs[n];
+    const userId = notifUsers[n % notifUsers.length].id;
+    const createdDaysAgo = randomBetween(0, 13);
+    const createdAt = daysAgo(createdDaysAgo);
+    const isRead = Math.random() < 0.7;
+    const readAt = isRead
+      ? new Date(createdAt.getTime() + randomBetween(30, 720) * 60 * 1000)
+      : null;
+
+    await prisma.notification.create({
+      data: {
+        userId,
+        channel: "in_app",
+        type: config.type,
+        title: config.title,
+        body: config.body,
+        isRead,
+        sentAt: createdAt,
+        readAt,
+        createdAt,
+      },
+    });
+  }
+
+  console.log(`  ✅ ${notificationConfigs.length} notifications created`);
 
   console.log("\n🎉 Seeding complete!");
   console.log("  Users: admin@pitabakery.sg / manager@pitabakery.sg / floor@pitabakery.sg");
