@@ -7,7 +7,8 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Factory, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
+import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 
 export default function LoginPage() {
@@ -48,21 +49,26 @@ export default function LoginPage() {
           <div className="absolute top-1/2 start-1/2 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
         </div>
 
-        <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
-              <Factory className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-bold">Mini ERP</span>
-          </div>
+        <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full items-center">
+          <div />
 
-          <div className="space-y-6 max-w-md">
-            <h1 className="text-4xl font-bold leading-tight">
-              Esemby Concept
-            </h1>
-            <p className="text-lg text-white/70 leading-relaxed">
-              Pita Bakery Management System
-            </p>
+          <div className="flex flex-col items-center space-y-8">
+            <Image
+              src="/logo-pita.jpeg"
+              alt="Pita Bakery"
+              width={260}
+              height={260}
+              className="rounded-full shadow-2xl shadow-black/30 ring-4 ring-white/20"
+              priority
+            />
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-bold leading-tight">
+                Pita Bakery
+              </h1>
+              <p className="text-lg text-white/70 leading-relaxed">
+                Management System
+              </p>
+            </div>
             <div className="flex gap-6 text-sm text-white/50">
               <div className="flex flex-col items-center gap-1">
                 <span className="text-2xl font-bold text-white/80">24/7</span>
@@ -88,19 +94,35 @@ export default function LoginPage() {
       </div>
 
       {/* Right side - login form */}
-      <div className="flex w-full lg:w-1/2 flex-col items-center justify-center bg-background p-6 sm:p-12 relative bg-dot-pattern">
-        <div className="absolute top-6 end-6">
+      <div className="flex w-full lg:w-1/2 flex-col items-center justify-center bg-background p-6 sm:p-12 relative overflow-hidden">
+        {/* Background image with high transparency */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/login-bg.jpeg"
+            alt=""
+            fill
+            className="object-cover opacity-[0.07]"
+            priority
+          />
+        </div>
+
+        <div className="absolute top-6 end-6 z-10">
           <LanguageSwitcher />
         </div>
 
-        <div className="w-full max-w-sm space-y-8">
+        <div className="w-full max-w-sm space-y-8 relative z-10">
           {/* Logo for mobile */}
           <div className="text-center lg:hidden">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
-              <Factory className="h-7 w-7 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold">Mini ERP</h1>
-            <p className="text-sm text-muted-foreground mt-1">Esemby Concept / Pita Bakery</p>
+            <Image
+              src="/logo-pita.jpeg"
+              alt="Pita Bakery"
+              width={100}
+              height={100}
+              className="mx-auto mb-4 rounded-full shadow-lg ring-2 ring-border"
+              priority
+            />
+            <h1 className="text-2xl font-bold">Pita Bakery</h1>
+            <p className="text-sm text-muted-foreground mt-1">Management System</p>
           </div>
 
           {/* Header */}

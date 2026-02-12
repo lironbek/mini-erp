@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
+import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -159,10 +160,14 @@ function SidebarContent() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-sidebar-primary/5 to-transparent" />
       <div className="flex h-14 items-center px-4 relative z-10">
         <Link href="/" className="flex items-center gap-2.5 font-bold text-sidebar-foreground group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 shadow-lg shadow-sidebar-primary/25 transition-shadow duration-300 group-hover:shadow-sidebar-primary/40">
-            <Factory className="h-4.5 w-4.5 text-sidebar-primary-foreground" />
-          </div>
-          <span className="text-lg tracking-tight">Mini ERP</span>
+          <Image
+            src="/logo-pita.jpeg"
+            alt="Pita Bakery"
+            width={32}
+            height={32}
+            className="rounded-full ring-1 ring-sidebar-border"
+          />
+          <span className="text-lg tracking-tight">Pita Bakery</span>
         </Link>
       </div>
       <div className="mx-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
