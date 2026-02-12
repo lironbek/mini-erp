@@ -19,6 +19,7 @@ export async function GET() {
       preferredLanguage: true,
       isActive: true,
       lastLogin: true,
+      image: true,
     },
     orderBy: { name: "asc" },
   });

@@ -86,7 +86,7 @@
   },
   "dashboard": {
     "title": "Papan Pemuka",
-    "welcome": "Selamat kembali",
+    "welcome": "Selamat kembali, {name}",
     "ordersToday": "Pesanan Hari Ini",
     "productionToday": "Pengeluaran Hari Ini",
     "revenueMTD": "Hasil Bulan Ini",
@@ -278,10 +278,16 @@
     "editUser": "Edit Pengguna",
     "deactivateUser": "Nyahaktifkan Pengguna",
     "activateUser": "Aktifkan Pengguna",
-    "resetPassword": "Set Semula Kata Laluan"
+    "resetPassword": "Set Semula Kata Laluan",
+    "profileImage": "Gambar Profil",
+    "uploadImage": "Muat Naik Gambar",
+    "removeImage": "Buang"
   },
   "settings": {
-    "title": "Tetapan"
+    "title": "Tetapan",
+    "usersDesc": "Urus pengguna, peranan dan kebenaran",
+    "notificationsDesc": "Konfigurasi keutamaan pemberitahuan",
+    "integrationsDesc": "Sambung sistem luaran"
   },
   "products": {
     "title": "Produk",
@@ -895,6 +901,7 @@
   },
   "ariba": {
     "title": "Integrasi Ariba",
+    "description": "Integrasi perolehan SAP Ariba",
     "settings": "Tetapan Ariba",
     "connectionStatus": "Status Sambungan",
     "connected": "Disambungkan",
@@ -936,6 +943,7 @@
   },
   "xero": {
     "title": "Integrasi Xero",
+    "description": "Perakaunan, invois pembekal dan nota kredit",
     "connect": "Sambung ke Xero",
     "disconnect": "Putuskan Sambungan",
     "connected": "Disambungkan ke Xero",
@@ -978,6 +986,7 @@
   },
   "freshbooks": {
     "title": "Integrasi Freshbooks",
+    "description": "Invois pelanggan dan penjejakan hasil",
     "connect": "Sambung ke Freshbooks",
     "disconnect": "Putuskan Sambungan",
     "connected": "Disambungkan ke Freshbooks",

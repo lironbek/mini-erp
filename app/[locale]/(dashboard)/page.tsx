@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   ShoppingCart,
@@ -129,6 +131,7 @@ type Alerts = {
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const locale = useLocale();
+  const { data: session } = useSession();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [charts, setCharts] = useState<Charts | null>(null);
   const [alerts, setAlerts] = useState<Alerts | null>(null);
@@ -219,15 +222,23 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground mt-1">{t("welcome")}</p>
+      <div className="flex items-center gap-4">
+        <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+          {session?.user?.image && <AvatarImage src={session.user.image} alt={session?.user?.name || ""} />}
+          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
+            {session?.user?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "U"}
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground mt-1">{t("welcome", { name: session?.user?.name || "" })}</p>
+        </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
         {kpiCards.map((card, i) => (
-          <Card key={card.title} className={`gradient-border glass-card hover:shadow-premium-hover transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up stagger-${i + 1}${i === kpiCards.length - 1 ? " col-span-2 md:col-span-1" : ""}`}>
+          <Card key={card.title} className={`hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up stagger-${i + 1}${i === kpiCards.length - 1 ? " col-span-2 md:col-span-1" : ""}`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/10">
@@ -250,7 +261,7 @@ export default function DashboardPage() {
       {/* Charts Row */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Revenue Trend */}
-        <Card className="glass-card hover:shadow-premium-hover transition-all duration-300">
+        <Card className="hover:shadow-md transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-sm font-semibold tracking-tight">{t("revenueTrend")}</CardTitle>
           </CardHeader>
@@ -307,7 +318,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Orders by Source */}
-        <Card className="glass-card hover:shadow-premium-hover transition-all duration-300">
+        <Card className="hover:shadow-md transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-sm font-semibold tracking-tight">{t("ordersBySource")}</CardTitle>
           </CardHeader>
@@ -346,7 +357,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Production vs Capacity */}
-        <Card className="glass-card hover:shadow-premium-hover transition-all duration-300">
+        <Card className="hover:shadow-md transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-sm font-semibold tracking-tight">{t("productionVsCapacity")}</CardTitle>
           </CardHeader>
@@ -384,7 +395,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Top 5 Products */}
-        <Card className="glass-card hover:shadow-premium-hover transition-all duration-300">
+        <Card className="hover:shadow-md transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-sm font-semibold tracking-tight">{t("topProducts")}</CardTitle>
           </CardHeader>
@@ -432,7 +443,7 @@ export default function DashboardPage() {
       {/* Alerts Row */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         {/* Orders Requiring Attention */}
-        <Card className="glass-card hover:shadow-premium-hover transition-all duration-300">
+        <Card className="hover:shadow-md transition-all duration-300">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 tracking-tight">
               <span className="status-dot status-dot-yellow" />
@@ -459,7 +470,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Inventory Alerts */}
-        <Card className="glass-card hover:shadow-premium-hover transition-all duration-300">
+        <Card className="hover:shadow-md transition-all duration-300">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 tracking-tight">
               <span className="status-dot status-dot-red" />
@@ -484,7 +495,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Expiring Soon */}
-        <Card className="glass-card hover:shadow-premium-hover transition-all duration-300">
+        <Card className="hover:shadow-md transition-all duration-300">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 tracking-tight">
               <span className="status-dot status-dot-yellow" />
@@ -511,7 +522,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Recent Notifications */}
-        <Card className="glass-card hover:shadow-premium-hover transition-all duration-300">
+        <Card className="hover:shadow-md transition-all duration-300">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 tracking-tight">
               <span className="status-dot status-dot-blue" />

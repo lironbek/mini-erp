@@ -93,6 +93,7 @@ model User {
   role              UserRole  @default(VIEWER)
   preferredLanguage String    @default("en")
   phone             String?
+  image             String?
   isActive          Boolean   @default(true)
   lastLogin         DateTime?
   createdAt         DateTime  @default(now())

@@ -402,7 +402,7 @@ export default function OrdersPage() {
                   {(ordersByStatus[status] || []).map((order) => (
                     <Card
                       key={order.id}
-                      className="cursor-pointer hover:shadow-premium-hover hover:-translate-y-0.5 transition-all duration-200"
+                      className="cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                       onClick={() => router.push(`/${locale}/orders/${order.id}`)}
                     >
                       <CardContent className="p-3">

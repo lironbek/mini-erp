@@ -86,7 +86,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "welcome": "Welcome back",
+    "welcome": "Welcome back, {name}",
     "ordersToday": "Orders Today",
     "productionToday": "Production Today",
     "revenueMTD": "Revenue MTD",
@@ -278,10 +278,16 @@
     "editUser": "Edit User",
     "deactivateUser": "Deactivate User",
     "activateUser": "Activate User",
-    "resetPassword": "Reset Password"
+    "resetPassword": "Reset Password",
+    "profileImage": "Profile Image",
+    "uploadImage": "Upload Image",
+    "removeImage": "Remove"
   },
   "settings": {
-    "title": "Settings"
+    "title": "Settings",
+    "usersDesc": "Manage users, roles, and permissions",
+    "notificationsDesc": "Configure notification preferences",
+    "integrationsDesc": "Connect external systems"
   },
   "products": {
     "title": "Products",
@@ -895,6 +901,7 @@
   },
   "ariba": {
     "title": "Ariba Integration",
+    "description": "SAP Ariba procurement integration",
     "settings": "Ariba Settings",
     "connectionStatus": "Connection Status",
     "connected": "Connected",
@@ -936,6 +943,7 @@
   },
   "xero": {
     "title": "Xero Integration",
+    "description": "Accounting, supplier invoices, and credit notes",
     "connect": "Connect to Xero",
     "disconnect": "Disconnect",
     "connected": "Connected to Xero",
@@ -978,6 +986,7 @@
   },
   "freshbooks": {
     "title": "Freshbooks Integration",
+    "description": "Customer invoicing and revenue tracking",
     "connect": "Connect to Freshbooks",
     "disconnect": "Disconnect",
     "connected": "Connected to Freshbooks",

@@ -26,6 +26,7 @@ export async function GET(
       isActive: true,
       lastLogin: true,
       phone: true,
+      image: true,
     },
   });
 
@@ -57,6 +58,7 @@ export async function PUT(
     updateData.preferredLanguage = body.preferredLanguage;
   if (body.isActive !== undefined) updateData.isActive = body.isActive;
   if (body.phone !== undefined) updateData.phone = body.phone;
+  if (body.image !== undefined) updateData.image = body.image;
 
   if (body.password) {
     updateData.passwordHash = await hash(body.password, 12);
@@ -72,6 +74,7 @@ export async function PUT(
       role: true,
       preferredLanguage: true,
       isActive: true,
+      image: true,
     },
   });
 

@@ -102,9 +102,9 @@ function NavItemComponent({
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-            "hover:bg-accent hover:text-accent-foreground",
-            isActive && "bg-accent/50 text-accent-foreground font-medium"
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
+            "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
           )}
           style={{ paddingInlineStart: `${level * 12 + 12}px` }}
         >
@@ -117,7 +117,7 @@ function NavItemComponent({
           )}
         </button>
         {isOpen && (
-          <div className="mt-1 space-y-1">
+          <div className="mt-1 space-y-0.5">
             {item.children!.map((child) => (
               <NavItemComponent
                 key={child.href}
@@ -137,10 +137,10 @@ function NavItemComponent({
     <Link
       href={item.href}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-        "hover:bg-accent hover:text-accent-foreground",
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
+        "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200",
         pathname === item.href &&
-          "bg-primary text-primary-foreground font-medium"
+          "bg-sidebar-primary text-sidebar-primary-foreground font-medium shadow-primary-glow"
       )}
       style={{ paddingInlineStart: `${level * 12 + 12}px` }}
     >
@@ -155,15 +155,18 @@ function SidebarContent() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-14 items-center px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Factory className="h-6 w-6" />
-          <span>Mini ERP</span>
+    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-sidebar-primary/5 to-transparent" />
+      <div className="flex h-14 items-center px-4 relative z-10">
+        <Link href="/" className="flex items-center gap-2.5 font-bold text-sidebar-foreground group">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 shadow-lg shadow-sidebar-primary/25 transition-shadow duration-300 group-hover:shadow-sidebar-primary/40">
+            <Factory className="h-4.5 w-4.5 text-sidebar-primary-foreground" />
+          </div>
+          <span className="text-lg tracking-tight">Mini ERP</span>
         </Link>
       </div>
-      <Separator />
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+      <div className="mx-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3 relative z-10">
         {navigation.map((item) => (
           <NavItemComponent
             key={item.href + item.titleKey}
@@ -173,9 +176,11 @@ function SidebarContent() {
           />
         ))}
       </nav>
-      <Separator />
-      <div className="p-4 text-xs text-muted-foreground">
-        Esemby Concept / Pita Bakery
+      <div className="mx-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
+      <div className="p-4 text-xs text-sidebar-foreground/30 relative z-10">
+        <span className="opacity-60">Esemby Concept</span>
+        <span className="mx-1.5 text-sidebar-foreground/15">/</span>
+        <span className="opacity-40">Pita Bakery</span>
       </div>
     </div>
   );
@@ -183,7 +188,7 @@ function SidebarContent() {
 
 export function Sidebar() {
   return (
-    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-e lg:bg-card">
+    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-e lg:border-sidebar-border lg:bg-sidebar">
       <SidebarContent />
     </aside>
   );
@@ -200,7 +205,7 @@ export function MobileSidebar() {
           <span className="sr-only">Toggle menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-64 p-0">
+      <SheetContent side="right" className="w-64 p-0">
         <SheetHeader className="sr-only">
           <SheetTitle>Navigation</SheetTitle>
         </SheetHeader>

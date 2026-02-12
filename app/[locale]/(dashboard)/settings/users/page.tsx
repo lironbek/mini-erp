@@ -34,7 +34,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, UserCog } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Plus, UserCog, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 type User = {
@@ -45,6 +46,7 @@ type User = {
   preferredLanguage: string;
   isActive: boolean;
   lastLogin: string | null;
+  image: string | null;
 };
 
 const roles = ["ADMIN", "MANAGER", "PRODUCTION", "WAREHOUSE", "SALES", "VIEWER"];
@@ -61,6 +63,7 @@ export default function UsersPage() {
     password: "",
     role: "VIEWER",
     preferredLanguage: "en",
+    image: "" as string | null,
   });
 
   useEffect(() => {
@@ -106,6 +109,7 @@ export default function UsersPage() {
           password: "",
           role: "VIEWER",
           preferredLanguage: "en",
+          image: null,
         });
         fetchUsers();
       } else {
@@ -144,6 +148,7 @@ export default function UsersPage() {
       password: "",
       role: user.role,
       preferredLanguage: user.preferredLanguage,
+      image: user.image,
     });
     setDialogOpen(true);
   }
@@ -156,6 +161,7 @@ export default function UsersPage() {
       password: "",
       role: "VIEWER",
       preferredLanguage: "en",
+      image: null,
     });
     setDialogOpen(true);
   }
@@ -180,6 +186,59 @@ export default function UsersPage() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("users.profileImage")}</Label>
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16 ring-2 ring-border">
+                    {formData.image && <AvatarImage src={formData.image} alt={formData.name} />}
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
+                      {formData.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById("user-image-input")?.click()}
+                    >
+                      <Upload className="me-2 h-3.5 w-3.5" />
+                      {t("users.uploadImage")}
+                    </Button>
+                    {formData.image && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, image: null })}
+                      >
+                        <X className="me-1 h-3.5 w-3.5" />
+                        {t("users.removeImage")}
+                      </Button>
+                    )}
+                  </div>
+                  <input
+                    id="user-image-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 500_000) {
+                        toast.error("Image must be under 500KB");
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setFormData({ ...formData, image: reader.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="name">{t("users.name")}</Label>
                 <Input
@@ -302,7 +361,17 @@ export default function UsersPage() {
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2.5">
+                            <Avatar className="h-8 w-8">
+                              {user.image && <AvatarImage src={user.image} alt={user.name} />}
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                                {user.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{user.name}</span>
+                          </div>
+                        </TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">
@@ -352,7 +421,15 @@ export default function UsersPage() {
                 {users.map((user) => (
                   <div key={user.id} className="border rounded-lg p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{user.name}</span>
+                      <div className="flex items-center gap-2.5">
+                        <Avatar className="h-8 w-8">
+                          {user.image && <AvatarImage src={user.image} alt={user.name} />}
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                            {user.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{user.name}</span>
+                      </div>
                       <Badge
                         variant={user.isActive ? "default" : "destructive"}
                       >

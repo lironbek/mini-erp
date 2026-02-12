@@ -86,7 +86,7 @@
   },
   "dashboard": {
     "title": "לוח בקרה",
-    "welcome": "ברוך הבא",
+    "welcome": "ברוך הבא, {name}",
     "ordersToday": "הזמנות היום",
     "productionToday": "ייצור היום",
     "revenueMTD": "הכנסות החודש",
@@ -278,10 +278,16 @@
     "editUser": "ערוך משתמש",
     "deactivateUser": "השבת משתמש",
     "activateUser": "הפעל משתמש",
-    "resetPassword": "איפוס סיסמה"
+    "resetPassword": "איפוס סיסמה",
+    "profileImage": "תמונת פרופיל",
+    "uploadImage": "העלאת תמונה",
+    "removeImage": "הסרה"
   },
   "settings": {
-    "title": "הגדרות"
+    "title": "הגדרות",
+    "usersDesc": "ניהול משתמשים, תפקידים והרשאות",
+    "notificationsDesc": "הגדרת העדפות התראות",
+    "integrationsDesc": "חיבור למערכות חיצוניות"
   },
   "products": {
     "title": "מוצרים",
@@ -895,6 +901,7 @@
   },
   "ariba": {
     "title": "אינטגרציית אריבה",
+    "description": "אינטגרציית רכש SAP Ariba",
     "settings": "הגדרות אריבה",
     "connectionStatus": "סטטוס חיבור",
     "connected": "מחובר",
@@ -936,6 +943,7 @@
   },
   "xero": {
     "title": "אינטגרציית Xero",
+    "description": "הנהלת חשבונות, חשבוניות ספקים ותעודות זיכוי",
     "connect": "התחבר ל-Xero",
     "disconnect": "התנתק",
     "connected": "מחובר ל-Xero",
@@ -978,6 +986,7 @@
   },
   "freshbooks": {
     "title": "אינטגרציית Freshbooks",
+    "description": "חשבוניות לקוחות ומעקב הכנסות",
     "connect": "התחבר ל-Freshbooks",
     "disconnect": "התנתק",
     "connected": "מחובר ל-Freshbooks",

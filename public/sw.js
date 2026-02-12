@@ -1,7 +1,6 @@
-const CACHE_NAME = "mini-erp-v1";
+const CACHE_NAME = "mini-erp-v2";
 const STATIC_ASSETS = [
   "/",
-  "/offline",
 ];
 
 // Install: cache static assets
@@ -28,8 +27,12 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // API requests: network first, fallback to cache
+  // API requests: network first, fallback to cache (GET only)
   if (url.pathname.startsWith("/api/")) {
+    // Only cache GET requests - POST/PUT/DELETE cannot be cached
+    if (event.request.method !== "GET") {
+      return;
+    }
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -59,7 +62,13 @@ self.addEventListener("fetch", (event) => {
   // HTML pages: network first
   event.respondWith(
     fetch(event.request).catch(() =>
-      caches.match(event.request).then((cached) => cached || caches.match("/offline"))
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return new Response(
+          "<html><body><h1>Offline</h1><p>You are offline. Please check your connection.</p></body></html>",
+          { headers: { "Content-Type": "text/html" } }
+        );
+      })
     )
   );
 });

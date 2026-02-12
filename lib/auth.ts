@@ -45,6 +45,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           preferredLanguage: user.preferredLanguage,
+          image: user.image,
         };
       },
     }),
@@ -54,7 +55,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 60, // 30 minutes
   },
   pages: {
-    signIn: "/en/login",
+    signIn: "/login",
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -62,6 +63,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.id = user.id;
         token.preferredLanguage = user.preferredLanguage;
+        token.image = user.image;
       }
       return token;
     },
@@ -70,6 +72,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
         session.user.preferredLanguage = token.preferredLanguage as string;
+        session.user.image = (token.image as string) || null;
       }
       return session;
     },

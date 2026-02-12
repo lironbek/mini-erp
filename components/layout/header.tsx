@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { LanguageSwitcher } from "./language-switcher";
 import { MobileSidebar } from "./sidebar";
 import {
@@ -18,6 +18,7 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 
 export function Header() {
   const t = useTranslations();
+  const locale = useLocale();
   const { data: session } = useSession();
 
   const user = session?.user;
@@ -28,7 +29,7 @@ export function Header() {
     .toUpperCase() || "U";
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:px-6">
+    <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-4 lg:px-6">
       <MobileSidebar />
 
       <div className="flex-1" />
@@ -39,9 +40,9 @@ export function Header() {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2">
-            <Avatar className="h-7 w-7">
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          <Button variant="ghost" size="sm" className="gap-2 group">
+            <Avatar className="h-7 w-7 ring-2 ring-primary/20 transition-all duration-200 group-hover:ring-primary/40">
+              <AvatarFallback className="text-xs bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold">{initials}</AvatarFallback>
             </Avatar>
             <span className="hidden sm:inline">{user?.name || "User"}</span>
           </Button>
@@ -62,7 +63,7 @@ export function Header() {
             Profile
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/en/login" })}>
+          <DropdownMenuItem onClick={() => signOut({ callbackUrl: `/${locale}/login` })}>
             <LogOut className="me-2 h-4 w-4" />
             {t("auth.logout")}
           </DropdownMenuItem>

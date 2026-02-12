@@ -86,7 +86,7 @@
   },
   "dashboard": {
     "title": "仪表盘",
-    "welcome": "欢迎回来",
+    "welcome": "欢迎回来，{name}",
     "ordersToday": "今日订单",
     "productionToday": "今日生产",
     "revenueMTD": "本月收入",
@@ -278,10 +278,16 @@
     "editUser": "编辑用户",
     "deactivateUser": "禁用用户",
     "activateUser": "启用用户",
-    "resetPassword": "重置密码"
+    "resetPassword": "重置密码",
+    "profileImage": "头像",
+    "uploadImage": "上传图片",
+    "removeImage": "删除"
   },
   "settings": {
-    "title": "设置"
+    "title": "设置",
+    "usersDesc": "管理用户、角色和权限",
+    "notificationsDesc": "配置通知偏好",
+    "integrationsDesc": "连接外部系统"
   },
   "products": {
     "title": "产品",
@@ -895,6 +901,7 @@
   },
   "ariba": {
     "title": "Ariba集成",
+    "description": "SAP Ariba 采购集成",
     "settings": "Ariba设置",
     "connectionStatus": "连接状态",
     "connected": "已连接",
@@ -936,6 +943,7 @@
   },
   "xero": {
     "title": "Xero集成",
+    "description": "会计、供应商发票和贷项通知单",
     "connect": "连接到Xero",
     "disconnect": "断开连接",
     "connected": "已连接到Xero",
@@ -978,6 +986,7 @@
   },
   "freshbooks": {
     "title": "Freshbooks集成",
+    "description": "客户发票和收入跟踪",
     "connect": "连接到Freshbooks",
     "disconnect": "断开连接",
     "connected": "已连接到Freshbooks",
